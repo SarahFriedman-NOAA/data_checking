@@ -37,7 +37,7 @@ View(abundance_haul_issues)
 
 ## Catch issues --------------------------------------------------
 
-# table of problematic specimen lengths/weights
+# plots of problematic specimen lengths/weights
 source("code/02_specimen_checks.R")
 
 length_plot

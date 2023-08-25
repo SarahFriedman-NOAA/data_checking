@@ -28,7 +28,7 @@ catch_data <- edit_catch_species0 %>%
 
 # detailing haul issues (abundance_haul = "N")
 abundance_haul_issues <- catch_data %>%
-  dplyr::select(-c(species_code:total_number_in_haul)) %>%
+  dplyr::select(-c(species_code:avg_specimen_weight)) %>%
   unique() %>%
   dplyr::group_by(station, stratum) %>%
   dplyr::add_count(name = "n_station") %>%

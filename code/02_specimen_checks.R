@@ -16,7 +16,8 @@ old_catch <- catch0 %>%
   dplyr::add_count()
 
 old_lengths <- v_extract_final_lengths0 %>%
-  dplyr::left_join(v_cruises0, by = join_by(region, cruise)) %>%
+  dplyr::left_join(v_cruises0, by = join_by(region, cruise),
+                   relationship = "many-to-many") %>%
   dplyr::filter(year > 2000 & survey_definition_id %in% survey_def_ids) %>%
   dplyr::select(species_code, sex, length, year)
 
@@ -24,10 +25,11 @@ old_lengths <- v_extract_final_lengths0 %>%
 
 # length and catch data collected this year
 new_lengths <- edit_lengths0 %>%
-  dplyr::right_join(haul_data) %>%
+  dplyr::right_join(haul_data, by = join_by(haul_id)) %>%
   dplyr::select(species_code, sex, length = edit_length, year, haul_id)
 
 new_catch <- catch_data %>%
+  dplyr::ungroup() %>%
   dplyr::select(species_code, avg_specimen_weight)
 
 
@@ -46,7 +48,7 @@ length_stats <- old_lengths %>%
 length_outliers <- length_stats %>%
   dplyr::filter(outlier) %>%
   dplyr::arrange(species_code) %>%
-  dplyr::left_join(haul_data)
+  dplyr::left_join(haul_data, by = join_by(year, haul_id))
 
 
 
@@ -59,7 +61,7 @@ catch_stats <- catch_data %>%
     cruise, cruise_id, vessel_id, haul, haul_id
   ) %>%
   dplyr::bind_rows(old_catch) %>%
-  dplyr::filter(n > 10 | is.na(n)) %>%
+  dplyr::filter(n > 10 | is.na(n)) %>% #filtering out species we don't have enough data on
   dplyr::group_by(species_code) %>%
   dplyr::mutate(outlier = abs(avg_specimen_weight - median(avg_specimen_weight)) > 4 * mad(avg_specimen_weight) & year == this_year) %>%
   dplyr::left_join(species, by = join_by(species_code))
@@ -68,6 +70,20 @@ catch_stats <- catch_data %>%
 catch_outliers <- catch_stats %>%
   dplyr::filter(outlier)
 
+
+
+# writing results to csv
+if (!file.exists("output/")) dir.create("output/", recursive = TRUE)
+
+length_outliers %>%
+  select(cruise, vessel_id, haul, species_name, common_name, species_code, length) %>%
+  arrange(vessel_id, haul) %>%
+  write_csv(paste0("output/length_outliers_", this_year, ".csv"))
+
+catch_outliers %>%
+  select(cruise, vessel_id, haul, species_name, common_name, species_code, avg_specimen_weight, total_weight, number_fish) %>%
+  arrange(vessel_id, haul) %>%
+  write_csv(paste0("output/catch_outliers_", this_year, ".csv"))
 
 
 
@@ -85,6 +101,9 @@ length_plot <- length_stats %>%
     col = "salmon", linewidth = 0.7
   )
 
+length_plot
+ggsave(paste0("output/length_outliers_", this_year, ".pdf"),  width = 10, height = 20)
+
 
 weight_plot <- catch_stats %>%
   dplyr::filter(year != this_year & species_code %in% catch_outliers$species_code) %>%
@@ -97,3 +116,9 @@ weight_plot <- catch_stats %>%
     data = catch_outliers, aes(xintercept = avg_specimen_weight),
     col = "salmon", linewidth = 0.7
   )
+
+weight_plot
+ggsave(paste0("output/weight_outliers_", this_year, ".pdf"), width = 10, height = 10)
+
+
+
