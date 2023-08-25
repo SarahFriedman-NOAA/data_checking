@@ -19,6 +19,7 @@ rm(p, pkg)
 ## Download Oracle Data ---------------------------------------------------
 
 source("code/connect_to_oracle.R")
+#source("C:/Users/sarah.friedman/Work/Rfunctions/ConnectToOracle_STF.R")
 source("code/00_download_data.R")
 
 
