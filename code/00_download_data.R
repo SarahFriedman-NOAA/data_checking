@@ -1,49 +1,56 @@
 ## Download data sets to local machine -------------------------------------------------------
+if (exists("channel")) {
+  # RACEBASE tables to query
+  locations <- c(
+    "RACE_DATA.V_CRUISES",
+    "RACE_DATA.RACE_SPECIES_CODES",
 
-# RACEBASE tables to query
-locations <- c(
-  "RACE_DATA.V_CRUISES",
-  "RACE_DATA.EDIT_CATCH_SPECIES",
-  "RACE_DATA.EDIT_CATCH_SAMPLES",
-  "RACE_DATA.EDIT_HAULS",
-  "RACE_DATA.EDIT_HAUL_MEASUREMENTS",
-  "RACE_DATA.EDIT_LENGTHS",
-  "RACE_DATA.RACE_SPECIES_CODES",
-  
-  "RACEBASE.CATCH",
-  "RACE_DATA.V_EXTRACT_FINAL_LENGTHS"
-)
+    # biological edit data
+    "RACE_DATA.EDIT_CATCH_SPECIES",
+    "RACE_DATA.EDIT_CATCH_SAMPLES",
+    "RACE_DATA.EDIT_LENGTHS",
+    "RACE_DATA.EDIT_SPECIMENS",
 
-if (!file.exists("data/oracle")) dir.create("data/oracle", recursive = TRUE)
+    # effort edit data
+    "RACE_DATA.EDIT_HAULS",
+    "RACE_DATA.EDIT_EVENTS",
+    "RACE_DATA.EDIT_HAUL_MEASUREMENTS",
+    #    "RACE_DATA.V_EXTRACT_FINAL_LENGTHS",
 
-
-# downloads tables in "locations"
-for (i in 1:length(locations)) {
-  print(locations[i])
-  filename <- tolower(gsub("\\.", "-", locations[i]))
-  a <- RODBC::sqlQuery(channel, paste0("SELECT * FROM ", locations[i]))
-  write_csv(
-    x = a,
-    here("data", "oracle", paste0(filename, ".csv"))
+    # historical data
+    "RACEBASE.CATCH",
+    "RACEBASE.LENGTH",
+    "RACEBASE.HAUL",
+    "RACEBASE.SPECIMEN",
+    "RACEBASE.CRUISE",
+    "RACEBASE.CATCH"
   )
-  remove(a)
-}
+
+  if (!file.exists("data/oracle")) dir.create("data/oracle", recursive = TRUE)
 
 
-
-# reads downloaded tables into R environment
-a <- list.files(
-  path = here::here("data", "oracle"),
-  pattern = "\\.csv"
-)
-
-for (i in 1:length(a)) {
-  b <- read_csv(file = here::here("data", "oracle", a[i]))
-  b <- janitor::clean_names(b)
-  if (names(b)[1] %in% "x1") {
-    b$x1 <- NULL
+  # downloads tables in "locations"
+  for (i in 1:length(locations)) {
+    print(locations[i])
+    filename <- tolower(gsub("\\.", "-", locations[i]))
+    a <- RODBC::sqlQuery(channel, paste0("SELECT * FROM ", locations[i]))
+    readr::write_csv(
+      x = a,
+      here::here("data", "oracle", paste0(filename, ".csv"))
+    )
+    remove(a)
   }
-  assign(x = paste0(str_extract(a[i], "[^-]*(?=\\.)"), "0"), value = b)
-  rm(b)
+} else {
+  # reads downloaded tables into R environment
+  aa <- list.files(
+    path = here::here("data", "oracle"),
+    pattern = "\\.csv"
+  )
+  if (!all(aa %in% tolower(gsub("\\.", "-", locations)))) {
+    cat("Not connected to Oracle database and can not locate proper tables in cache.
+        Connect to Oracle and re-run script to proceed.\n")
+    gapindex::get_connected()
+  } else {
+    cat("Not connected to Oracle database. Will use cached tables.\n")
+  }
 }
-
