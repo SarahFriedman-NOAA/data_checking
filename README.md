@@ -1,5 +1,5 @@
-# AFSC GAP Data Finalization 
-Post-survey biological data processing. Code detects outliers in specimen length, weight, length-weight relationship, and geographic outliers using historical GAP records. 
+# AFSC GAP Data Checking
+Post-survey and in-season biological data processing. Code detects outliers in specimen length, weight, length-weight relationship, and geographic outliers using historical GAP records. 
 
 
 ## This code is primarily maintained by:
