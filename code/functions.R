@@ -116,3 +116,5 @@ gam_outliers <- function(data){
   }
   abs(mod$residuals)
 }
+
+

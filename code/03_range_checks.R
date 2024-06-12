@@ -64,7 +64,7 @@ outlier_spp <- new_records %>%
 
 
 # plots outliers to pdf document
-pdf(paste0("output/species_outliers_", this_year, ".pdf"))
+pdf(paste0(out_dir, "/range_outliers_", this_year, ".pdf"))
 new_records %>%
   dplyr::filter(species_name %in% outlier_spp$species_name) %>%
   dplyr::group_by(species_name) %>%
@@ -81,5 +81,5 @@ outlier_df <- outlier_spp %>%
     vessel, haul, vouchered
   ) %>%
   dplyr::arrange(region, species_name) %>%
-  dplyr::mutate(issue = "geographic outlier")
+  dplyr::mutate(issue = "range outlier")
 #readr::write_csv(outlier_df, paste0("output/species_outliers_", this_year, ".csv"))

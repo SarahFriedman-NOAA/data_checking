@@ -1,3 +1,7 @@
+# toggle if in season data checking or data finalization post-survey
+in_season <- TRUE
+
+
 ## Load packages -----------------------------------------------------------
 pkg <- c("tidyverse", 
          "RODBC",
@@ -8,7 +12,9 @@ pkg <- c("tidyverse",
          "ggrepel",
          "gapindex",
          "ggforce",
-         "mgcv")
+         "mgcv",
+         "googlesheets4"
+)
 
 for (p in pkg) {
   if (!require(p, character.only = TRUE)) {
@@ -47,10 +53,10 @@ source("code/00_clean_data.R")
 ## Abundance Haul issues --------------------------------------------------
 
 # table of problematic hauls where abundance haul needs to be set to "N" during finalization
-source("code/01_abundance_haul_checks.R")
-
-View(abundance_haul_issues)
-
+if(!in_season){
+  source("code/01_abundance_haul_checks.R")
+  View(abundance_haul_issues)
+}
 
 
 
@@ -59,8 +65,8 @@ View(abundance_haul_issues)
 # generates plots of problematic specimen lengths/weights
 source("code/02_specimen_checks.R")
 
-length_plot
-weight_plot
+# length_plot
+# weight_plot
 
 
 
@@ -72,12 +78,31 @@ source("code/03_range_checks.R")
 
 
 
+
+## Writing output --------------------------------------------------
+
 # writing all issues to csv output
-outlier_df %>%
+out <- outlier_df %>%
   dplyr::full_join(length_outliers) %>%
   dplyr::full_join(catch_outliers) %>%
   dplyr::full_join(specimen_outliers) %>%
-  dplyr::select(issue, cruise, region, vessel, haul, 
-                species_name, common_name, species_code, everything()) %>%
-  dplyr::arrange(cruise, region, vessel, haul) %>%
-  readr::write_csv(paste0("output/all_biological_outliers_", this_year, ".csv"))
+  dplyr::select(cruise, region, vessel, haul, issue,
+                species_name, common_name, species_code,
+                vouchered, length_mm, weight_kg) %>%
+  dplyr::mutate(weight_kg = round(weight_kg, 3)) %>%
+  dplyr::arrange(cruise, region, vessel, haul) 
+
+readr::write_csv(out, paste0(out_dir, "/all_catch_outliers_", this_year, ".csv"), na = "")
+
+
+# download current drive version
+drive_file <- "1Slgd3A94RfzKzwfilxgrs4NSA9HxT4NEgiqIK4sFoVg"
+drive_version <- googlesheets4::read_sheet(drive_file)
+
+# combine drive version and current version
+new_rows <- anti_join(out, drive_version) %>%
+  dplyr::arrange(cruise, region, vessel, haul) 
+
+# append new rows to sheet
+googlesheets4::sheet_append(drive_file, new_rows)
+

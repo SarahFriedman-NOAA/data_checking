@@ -31,7 +31,7 @@ if (exists("channel")) {
 
   # downloads tables in "locations"
   for (i in 1:length(locations)) {
-    print(locations[i])
+    print(paste0("Downloading data from ",locations[i]))
     filename <- tolower(gsub("\\.", "-", locations[i]))
     a <- RODBC::sqlQuery(channel, paste0("SELECT * FROM ", locations[i]))
     readr::write_csv(

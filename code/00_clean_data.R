@@ -18,8 +18,10 @@ for (i in 1:length(a)) {
 
 ## Load GAP cruise information --------------------------------------------------
 
-# this_year <- as.numeric(format(Sys.Date(), "%Y"))
-this_year <- 2023
+this_year <- as.numeric(format(Sys.Date(), "%Y"))
+out_dir <- paste0("output/", this_year)
+if (!file.exists(out_dir)) dir.create(out_dir)
+
 
 # get all catch and taxonomy info together and filtering to just groundfish surveys after 2000
 survey_def_ids <- c(
