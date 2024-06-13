@@ -2,9 +2,6 @@
 
 # RACEBASE tables to query
 locations <- c(
-  "RACE_DATA.V_CRUISES",
-  "RACE_DATA.RACE_SPECIES_CODES",
-
   # biological edit data
   "RACE_DATA.EDIT_CATCH_SPECIES",
   "RACE_DATA.EDIT_CATCH_SAMPLES",
@@ -15,11 +12,11 @@ locations <- c(
   "RACE_DATA.EDIT_HAULS",
   "RACE_DATA.EDIT_EVENTS",
   "RACE_DATA.EDIT_HAUL_MEASUREMENTS"
-  #    "RACE_DATA.V_EXTRACT_FINAL_LENGTHS",
 )
 
 historical_data <- c(
-  # historical data
+  "RACE_DATA.V_CRUISES",
+  "RACE_DATA.RACE_SPECIES_CODES",
   "RACEBASE.CATCH",
   "RACEBASE.LENGTH",
   "RACEBASE.HAUL",
@@ -46,11 +43,7 @@ if (exists("channel")) {
   }
 } else {
   # reads downloaded tables into R environment
-  aa <- list.files(
-    path = here::here("data", "oracle"),
-    pattern = "\\.csv"
-  )
-  if (!all(aa %in% tolower(gsub("\\.", "-", locations)))) {
+  if (!all(gsub("\\.", "-", locations) %in% files)) {
     cat("Not connected to Oracle database and can not locate proper tables in cache.
         Connect to Oracle and re-run script to proceed.\n")
     gapindex::get_connected()
