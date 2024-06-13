@@ -1,6 +1,9 @@
 # toggle if in season data checking or data finalization post-survey
 in_season <- TRUE
 
+# Use cached RACEBASE data? Will always download edit tables fresh
+use_cached <- TRUE
+
 
 ## Load packages -----------------------------------------------------------
 pkg <- c("tidyverse", 

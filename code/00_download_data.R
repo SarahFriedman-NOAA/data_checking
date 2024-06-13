@@ -16,7 +16,9 @@ if (exists("channel")) {
     "RACE_DATA.EDIT_EVENTS",
     "RACE_DATA.EDIT_HAUL_MEASUREMENTS",
     #    "RACE_DATA.V_EXTRACT_FINAL_LENGTHS",
-
+  )
+  
+  historical_data <- c(
     # historical data
     "RACEBASE.CATCH",
     "RACEBASE.LENGTH",
@@ -25,9 +27,11 @@ if (exists("channel")) {
     "RACEBASE.CRUISE",
     "RACEBASE.CATCH"
   )
-
+  
   if (!file.exists("data/oracle")) dir.create("data/oracle", recursive = TRUE)
-
+  files <- tools::file_path_sans_ext(toupper(list.files("data/oracle")))
+  if(!use_cached | !all(gsub("\\.", "-", historical_data) %in% files))  locations <- c(locations, historical_data)
+  
 
   # downloads tables in "locations"
   for (i in 1:length(locations)) {
