@@ -94,10 +94,12 @@ googlesheets4::gs4_auth()
 
 # download current drive version
 drive_file <- "1Slgd3A94RfzKzwfilxgrs4NSA9HxT4NEgiqIK4sFoVg"
-drive_version <- googlesheets4::read_sheet(drive_file)
+drive_version <- googlesheets4::read_sheet(drive_file) %>%
+  janitor::clean_names()
 
 # combine drive version and current version
-new_rows <- dplyr::anti_join(out, drive_version) %>%
+new_rows <- dplyr::anti_join(out, drive_version, 
+                             join_by(cruise, vessel, haul, issue, species_name)) %>%
   dplyr::mutate(date_script_run = Sys.Date()) %>%
   dplyr::select(date_script_run, everything()) %>%             
   dplyr::arrange(cruise, region, vessel, haul) 
