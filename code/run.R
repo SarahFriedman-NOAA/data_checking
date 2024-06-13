@@ -49,17 +49,6 @@ source("code/00_clean_data.R")
 
 
 
-
-## Abundance Haul issues --------------------------------------------------
-
-# table of problematic hauls where abundance haul needs to be set to "N" during finalization
-if(!in_season){
-  source("code/01_abundance_haul_checks.R")
-  View(abundance_haul_issues)
-}
-
-
-
 ## Catch data issues --------------------------------------------------
 
 # generates plots of problematic specimen lengths/weights
@@ -86,22 +75,30 @@ out <- outlier_df %>%
   dplyr::full_join(length_outliers) %>%
   dplyr::full_join(catch_outliers) %>%
   dplyr::full_join(specimen_outliers) %>%
+  dplyr::mutate(avg_weight_kg = round(weight_kg, 2)) %>%
   dplyr::select(cruise, region, vessel, haul, issue,
                 species_name, common_name, species_code,
-                vouchered, length_mm, weight_kg) %>%
-  dplyr::mutate(weight_kg = round(weight_kg, 3)) %>%
+                vouchered, length_mm, avg_weight_kg) %>%
   dplyr::arrange(cruise, region, vessel, haul) 
-
 readr::write_csv(out, paste0(out_dir, "/all_catch_outliers_", this_year, ".csv"), na = "")
 
+
+
+
+# authorize googlesheets4
+googlesheets4::gs4_auth()
+1
 
 # download current drive version
 drive_file <- "1Slgd3A94RfzKzwfilxgrs4NSA9HxT4NEgiqIK4sFoVg"
 drive_version <- googlesheets4::read_sheet(drive_file)
 
 # combine drive version and current version
-new_rows <- anti_join(out, drive_version) %>%
+new_rows <- dplyr::anti_join(out, drive_version) %>%
+  dplyr::mutate(date_script_run = Sys.Date()) %>%
+  dplyr::select(date_script_run, everything()) %>%             
   dplyr::arrange(cruise, region, vessel, haul) 
+
 
 # append new rows to sheet
 googlesheets4::sheet_append(drive_file, new_rows)

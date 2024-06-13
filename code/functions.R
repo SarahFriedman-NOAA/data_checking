@@ -72,7 +72,9 @@ check_outlier <- function(data, check_year, catch_data, plot = FALSE,
     if (plot & length(o) > 0) {
       world <- ggplot2::map_data("world2", wrap = c(40, 400)) %>%
         dplyr::filter(region %in% c("Russia", "USA", "Canada"))
-      sp <- paste0(sp_catch$species_name[1], " (", sp_catch$species_code[1], ")")
+      ss <- sp_catch$species_name[1]
+      if(is.na(ss)) ss <- species_codes$species_name[species_codes$species_code == sp_catch$species_code[1]]
+      sp <- paste0(ss, " (", sp_catch$species_code[1], ")")
 
       p <- ggplot2::ggplot() +
         ggplot2::geom_polygon(
@@ -112,7 +114,7 @@ gam_outliers <- function(data){
   if(nrow(data) > 1000) {
     mod <- mgcv::gam(weight ~ s(length, bs = "cs", fx = TRUE, k = 10), data = data)
   } else {
-    mod <- stats::loess(weight ~ length, data = data)
+    suppressWarnings(mod <- stats::loess(weight ~ length, data = data))
   }
   abs(mod$residuals)
 }
