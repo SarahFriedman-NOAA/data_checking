@@ -99,7 +99,7 @@ drive_version <- googlesheets4::read_sheet(drive_file) %>%
 
 # combine drive version and current version
 new_rows <- dplyr::anti_join(out, drive_version, 
-                             join_by(cruise, vessel, haul, issue, species_name)) %>%
+                             join_by(cruise, vessel, haul, issue, species_code)) %>%
   dplyr::mutate(date_script_run = Sys.Date()) %>%
   dplyr::select(date_script_run, everything()) %>%             
   dplyr::arrange(cruise, region, vessel, haul) 
