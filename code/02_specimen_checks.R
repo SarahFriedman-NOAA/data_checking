@@ -78,13 +78,12 @@ if (nrow(length_outliers) > 0) {
       ggplot2::ggplot(aes(x = length)) +
       ggplot2::geom_density(linewidth = 0.7, col = "grey40", fill = "grey70", alpha = 0.6) +
       ggforce::facet_wrap_paginate(~species_name, scales = "free", ncol = 4, nrow = 4, page = i) +
-      ggplot2::theme_classic() +
-      ggplot2::theme(strip.background = element_blank()) +
       ggplot2::geom_vline(
-        data = length_outliers, aes(xintercept = length_mm),
-        col = "salmon", linewidth = 0.7
+        data = length_outliers, aes(xintercept = length_mm, col = region),
+        linewidth = 0.8
       ) +
-      xlab("length_mm")
+      xlab("length (mm)") + ylab("") +
+      theme_blue_strip() 
     print(length_plot)
   }
   dev.off()
@@ -99,13 +98,12 @@ if (nrow(catch_outliers) > 0) {
       ggplot2::ggplot(aes(x = avg_specimen_weight)) +
       ggplot2::geom_density(linewidth = 0.7, col = "grey40", fill = "grey70", alpha = 0.6) +
       ggforce::facet_wrap_paginate(~species_name, scales = "free", ncol = 4, nrow = 4, page = i) +
-      ggplot2::theme_classic() +
-      ggplot2::theme(strip.background = element_blank()) +
       ggplot2::geom_vline(
-        data = catch_outliers, aes(xintercept = weight_kg),
-        col = "salmon", linewidth = 0.7
+        data = catch_outliers, aes(xintercept = weight_kg, col = region),
+        linewidth = 0.8
       ) +
-      xlab("weight_kg")
+      xlab("weight (kg)") + ylab("") +
+      theme_blue_strip() 
     print(weight_plot)
   }
   dev.off()
@@ -113,20 +111,19 @@ if (nrow(catch_outliers) > 0) {
 
 
 if (nrow(specimen_outliers) > 0) {
+  pg <- ceiling(length(unique(specimen_outliers$species_code)) / 4)
   pdf(paste0(out_dir, "/specimen_outliers_", this_year, ".pdf"), width = 10, height = 10)
   specimen_plot <- specimen_stats %>%
     dplyr::filter(year != this_year & species_code %in% specimen_outliers$species_code) %>%
     ggplot2::ggplot(aes(x = length, y = weight)) +
-    ggplot2::facet_wrap(~species_name, scales = "free") +
-    #  ggforce::facet_wrap_paginate(~species_name, scales = "free", ncol = 3, nrow = 3, page = 1) +
+    ggforce::facet_wrap_paginate(~species_name, scales = "free", ncol = 2, nrow = 2, page = i) +
     ggplot2::geom_point(alpha = 0.4, col = "grey80") +
     ggplot2::geom_smooth(method = "gam", col = "black", se = FALSE, lwd = 1) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(strip.background = element_blank()) +
     ggplot2::geom_point(
-      data = specimen_outliers, aes(x = length_mm, y = weight_kg),
-      col = "salmon"
-    )
+      data = specimen_outliers, aes(x = length_mm, y = weight_kg, col = region), size = 2
+    ) + 
+    xlab("length (mm)") + ylab("weight (kg)") +
+    theme_blue_strip()
   print(specimen_plot)
   dev.off()
 }

@@ -120,3 +120,20 @@ gam_outliers <- function(data){
 }
 
 
+# borrowing ggplot theme from Sean's esrindex package
+theme_blue_strip <- function() {
+  theme_bw() %+replace%
+    theme(axis.title = element_text(color = "black", face = "bold"),
+          axis.text = element_text(color = "black", size = 9),
+          axis.ticks = element_line(color = "black"),
+          panel.grid = element_blank(),  
+          legend.title = element_blank(),
+          legend.text = element_text(size = 10),
+          # legend.position = "bottom",
+          strip.text = element_text(size = 10,
+                                    color = "white",
+                                    face = "bold",
+                                    margin = margin(0.5, 0, 0.5, 0, "mm")),
+          strip.background = element_rect(fill = "#0055a4",
+                                          color = NA))
+}
