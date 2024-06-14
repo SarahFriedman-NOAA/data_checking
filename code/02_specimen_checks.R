@@ -23,7 +23,7 @@ catch_stats <- new_catch %>%
   dplyr::right_join(new_haul, by = join_by(haul_id)) %>%
   dplyr::bind_rows(old_catch) %>%
   dplyr::group_by(species_code) %>%
-  dplyr::filter(!is.na(avg_specimen_weight) & species_code != 21741) %>%
+  dplyr::filter(!is.na(avg_specimen_weight) & !species_code %in% c(21721, 21741)) %>%
   dplyr::add_count() %>%
   dplyr::filter(n > 20 | is.na(n)) %>% # filtering out species we don't have enough data on
   mutate(log_weight = log(avg_specimen_weight)) %>%

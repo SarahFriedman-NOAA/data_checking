@@ -1,6 +1,3 @@
-# toggle if in season data checking or data finalization post-survey
-in_season <- TRUE
-
 # Use cached RACEBASE data? Will always download edit tables fresh
 use_cached <- TRUE
 
@@ -19,6 +16,7 @@ pkg <- c("tidyverse",
          "googlesheets4"
 )
 
+
 for (p in pkg) {
   if (!require(p, character.only = TRUE)) {
     install.packages(p)
@@ -28,25 +26,26 @@ for (p in pkg) {
 rm(p, pkg)
 
 
-
-## Download and clean Oracle data ---------------------------------------------------
-
 # loading bespoke functions
 source("code/functions.R")
 
+
+
+## Download and clean Oracle data ---------------------------------------------------
 
 # connecting to Oracle database
 if (file.exists("Z:/Projects/ConnectToOracle.R")) {
   source("Z:/Projects/ConnectToOracle.R")
 } else {
-  gapindex::get_connected()
+  channel <- gapindex::get_connected()
 }
 
-# downloads data and reads in csvs
+
+# downloads data from oracle
 source("code/00_download_data.R")
 
 
-# downloading, cleaning, and formatting racebase data
+# reading, cleaning, and formatting data
 source("code/00_clean_data.R")
 
 
@@ -57,17 +56,13 @@ source("code/00_clean_data.R")
 # generates plots of problematic specimen lengths/weights
 source("code/02_specimen_checks.R")
 
-# length_plot
-# weight_plot
-
-
-
-## Species range issues --------------------------------------------------
-
 # checks for geographical outliers based on historical data
 # code takes a while to run!
 source("code/03_range_checks.R")
 
+
+# length_plot
+# weight_plot
 
 
 
@@ -105,6 +100,6 @@ new_rows <- dplyr::anti_join(out, drive_version,
   dplyr::arrange(cruise, region, vessel, haul) 
 
 
-# append new rows to sheet
+# append new rows to google sheet
 googlesheets4::sheet_append(drive_file, new_rows)
 

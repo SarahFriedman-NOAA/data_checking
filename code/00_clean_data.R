@@ -5,7 +5,7 @@ a <- list.files(
 )
 
 for (i in 1:length(a)) {
-  b <- readr::read_csv(file = here::here("data", "oracle", a[i]))
+  suppressWarnings(b <- readr::read_csv(file = here::here("data", "oracle", a[i]), show_col_types = FALSE))
   b <- janitor::clean_names(b)
   if (names(b)[1] %in% "x1") {
     b$x1 <- NULL
@@ -80,8 +80,8 @@ new_haul <- edit_events0 %>%
     start_longitude = ddm_to_dd(edit_longitude, "long")
   ) %>%
   dplyr::select(haul_id, contains("start")) %>%
-  dplyr::right_join(edit_hauls0) %>%
-  dplyr::right_join(new_cruise) %>%
+  dplyr::right_join(edit_hauls0, by = join_by(haul_id)) %>%
+  dplyr::right_join(new_cruise, by = join_by(cruise_id)) %>%
   dplyr::left_join(edit_haul_measurements0, by = join_by(haul_id)) %>%
   dplyr::mutate(duration = edit_duration_ob_fb * 60) %>%
   dplyr::select(
