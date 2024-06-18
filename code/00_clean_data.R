@@ -20,7 +20,7 @@ for (i in 1:length(a)) {
 
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 out_dir <- paste0("output/", this_year)
-if (!file.exists(out_dir)) dir.create(out_dir)
+if (!file.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 
 
 # get all catch and taxonomy info together and filtering to just groundfish surveys after 2000
