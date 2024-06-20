@@ -46,7 +46,7 @@ specimen_stats <- new_lengths %>%
   dplyr::right_join(new_haul, by = join_by(haul_id)) %>%
   dplyr::bind_rows(old_lengths) %>%
   dplyr::filter(!is.na(weight) & !is.na(length)) %>%
-  dplyr::mutate(weight = weight/1000) %>%
+  dplyr::mutate(weight = weight / 1000) %>%
   dplyr::group_by(species_code) %>%
   dplyr::add_count() %>%
   dplyr::filter(n > 10) %>% # filtering out species we don't have enough data on
@@ -82,12 +82,14 @@ if (nrow(length_outliers) > 0) {
         data = length_outliers, aes(xintercept = length_mm, col = region),
         linewidth = 0.8
       ) +
-      xlab("length (mm)") + ylab("") +
-      theme_blue_strip() 
+      xlab("length (mm)") +
+      ylab("") +
+      theme_blue_strip()
     print(length_plot)
   }
   dev.off()
 }
+
 
 if (nrow(catch_outliers) > 0) {
   pg <- ceiling(length(unique(catch_outliers$species_code)) / 16)
@@ -102,8 +104,9 @@ if (nrow(catch_outliers) > 0) {
         data = catch_outliers, aes(xintercept = weight_kg, col = region),
         linewidth = 0.8
       ) +
-      xlab("weight (kg)") + ylab("") +
-      theme_blue_strip() 
+      xlab("weight (kg)") +
+      ylab("") +
+      theme_blue_strip()
     print(weight_plot)
   }
   dev.off()
@@ -113,18 +116,20 @@ if (nrow(catch_outliers) > 0) {
 if (nrow(specimen_outliers) > 0) {
   pg <- ceiling(length(unique(specimen_outliers$species_code)) / 4)
   pdf(paste0(out_dir, "/specimen_outliers_", this_year, ".pdf"), width = 10, height = 10)
-  specimen_plot <- specimen_stats %>%
-    dplyr::filter(year != this_year & species_code %in% specimen_outliers$species_code) %>%
-    ggplot2::ggplot(aes(x = length, y = weight)) +
-    ggforce::facet_wrap_paginate(~species_name, scales = "free", ncol = 2, nrow = 2, page = i) +
-    ggplot2::geom_point(alpha = 0.4, col = "grey80") +
-    ggplot2::geom_smooth(method = "gam", col = "black", se = FALSE, lwd = 1) +
-    ggplot2::geom_point(
-      data = specimen_outliers, aes(x = length_mm, y = weight_kg, col = region), size = 2
-    ) + 
-    xlab("length (mm)") + ylab("weight (kg)") +
-    theme_blue_strip()
-  print(specimen_plot)
+  for (i in 1:pg) {
+    specimen_plot <- specimen_stats %>%
+      dplyr::filter(year != this_year & species_code %in% specimen_outliers$species_code) %>%
+      ggplot2::ggplot(aes(x = length, y = weight)) +
+      ggforce::facet_wrap_paginate(~species_name, scales = "free", ncol = 2, nrow = 2, page = i) +
+      ggplot2::geom_point(alpha = 0.4, col = "grey80") +
+      ggplot2::geom_smooth(method = "gam", col = "black", se = FALSE, lwd = 1) +
+      ggplot2::geom_point(
+        data = specimen_outliers, aes(x = length_mm, y = weight_kg, col = region), size = 2
+      ) +
+      xlab("length (mm)") +
+      ylab("weight (kg)") +
+      theme_blue_strip()
+    print(specimen_plot)
+  }
   dev.off()
 }
-
