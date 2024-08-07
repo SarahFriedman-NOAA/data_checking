@@ -133,3 +133,5 @@ if (nrow(specimen_outliers) > 0) {
   }
   dev.off()
 }
+
+cat(paste0("Disgnostic plots written to output folder at:\n", here::here(), "/", out_dir))
