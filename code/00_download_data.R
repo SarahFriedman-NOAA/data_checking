@@ -45,7 +45,8 @@ if (exists("channel")) {
   # reads downloaded tables into R environment
   if (!all(gsub("\\.", "-", locations) %in% files)) {
     cat("Not connected to Oracle database and can not locate proper tables in cache.
-        Connect to Oracle and re-run script to proceed.\n")
+        Connect to Oracle and re-run download_data script to proceed.\n")
+    use_cached <- FALSE
     gapindex::get_connected()
   } else {
     cat("Not connected to Oracle database. Will use cached tables.\n")
