@@ -87,7 +87,8 @@ new_haul <- edit_events0 %>%
   dplyr::select(
     haul_id, cruise_id, cruise, region, year, vessel_id, haul, station, stratum, haul_type,
     performance, accessories, gear, duration, start_latitude, start_longitude,
-    depth = edit_bottom_depth
+    bottom_depth = edit_bottom_depth, gear_depth = edit_gear_depth, net_height = edit_net_height,
+    net_height_method
   )
 
 

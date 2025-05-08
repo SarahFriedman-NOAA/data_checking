@@ -1,5 +1,6 @@
 # Use cached RACEBASE data? Will always download edit tables fresh
 use_cached <- TRUE
+drive_file <- "1Wgz3uu4h8X1NAQPdBFtdESF9f8RDKORLaCMjUSfAn4I"
 
 
 ## Load packages -----------------------------------------------------------
@@ -46,7 +47,7 @@ source("code/00_download_data.R")
 
 
 # reading, cleaning, and formatting data
-source("code/00_clean_data.R")
+source("code/01_clean_data.R")
 
 
 
@@ -59,7 +60,6 @@ source("code/02_specimen_checks.R")
 # checks for geographical outliers based on historical data
 # code takes a while to run!
 source("code/03_range_checks.R")
-
 
 # length_plot
 # weight_plot
@@ -88,7 +88,6 @@ googlesheets4::gs4_auth()
 1
 
 # download current drive version
-drive_file <- "1Slgd3A94RfzKzwfilxgrs4NSA9HxT4NEgiqIK4sFoVg"
 drive_version <- googlesheets4::read_sheet(drive_file) %>%
   janitor::clean_names()
 
