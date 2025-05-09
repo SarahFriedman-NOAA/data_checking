@@ -1,3 +1,28 @@
+pkg <- c("tidyverse", 
+         "RODBC",
+         "here", 
+         "janitor", 
+         "getPass",
+         "dbscan",
+         "ggrepel",
+         "gapindex",
+         "ggforce",
+         "mgcv",
+         "googlesheets4"
+)
+
+
+for (p in pkg) {
+  if (!require(p, character.only = TRUE)) {
+    install.packages(p)
+    require(p, character.only = TRUE)
+  }
+}
+rm(p, pkg)
+
+
+
+
 # convert degree decimal minutes to decimal degrees
 ddm_to_dd <- function(x, type) {
   if (type == "lat") {
@@ -26,13 +51,16 @@ ddm_to_dd <- function(x, type) {
 check_outlier <- function(data, check_year, catch_data, plot = FALSE,
                           eps = 7, minPts = 2) {
   sp_catch <- catch_data %>%
-    dplyr::filter(species_code == data$species_code[1])
+    dplyr::filter(species_code == data$species_code[1]) %>%
+    dplyr::bind_rows(., data) %>%
+    tidyr::fill(species_name) %>%
+    dplyr::filter(!is.na(start_latitude))
+    
 
-  if (!any(sp_catch$year %in% check_year)) {
-    sp_catch <- dplyr::bind_rows(sp_catch, data) %>%
-      tidyr::fill(species_name) %>%
-      dplyr::filter(!is.na(start_latitude))
-  }
+  # if (!any(sp_catch$year %in% check_year)) {
+  #   sp_catch <- dplyr::bind_rows(sp_catch, data) %>%
+  #     tidyr::fill(species_name) 
+  # }
 
   if (nrow(sp_catch) > 0) {
     # clustering <- dbscan(sp_catch[,c("start_longitude", "start_latitude")],
@@ -137,3 +165,15 @@ theme_blue_strip <- function() {
           strip.background = element_rect(fill = "#0055a4",
                                           color = NA))
 }
+
+
+
+# function to add checkboxes to googlesheets
+rule_checkbox <- googlesheets4:::new(
+  "DataValidationRule",
+  condition = googlesheets4:::new_BooleanCondition(type = "BOOLEAN"),
+  inputMessage = "Lorem ipsum dolor sit amet",
+  strict = TRUE,
+  showCustomUi = TRUE
+)
+

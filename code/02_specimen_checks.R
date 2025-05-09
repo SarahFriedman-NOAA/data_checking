@@ -5,11 +5,11 @@ length_stats <- new_lengths %>%
   dplyr::right_join(new_haul, by = join_by(haul_id)) %>%
   dplyr::bind_rows(old_lengths) %>%
   dplyr::group_by(species_code) %>%
-  dplyr::mutate(outlier = abs(length - median(length, na.rm = T)) > (4.5 * mad(length, na.rm = T)) & year == this_year) %>%
+  dplyr::mutate(outlier = abs(length - median(length, na.rm = T)) > (4.5 * mad(length, na.rm = T))) %>%
   dplyr::left_join(species_codes, by = join_by(species_code))
 
 length_outliers <- length_stats %>%
-  dplyr::filter(outlier & species_code != 21741) %>%
+  dplyr::filter(outlier & species_code != 21741 & year == this_year) %>% 
   dplyr::arrange(species_code) %>%
   dplyr::select(cruise, region,
     vessel = vessel_id, haul, species_name, common_name, species_code,

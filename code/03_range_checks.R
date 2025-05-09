@@ -30,7 +30,7 @@ new_records <- new_catch %>%
   dplyr::select(-level) %>%
   dplyr::select(
     species_code, species_name, common_name, start_longitude,
-    start_latitude, depth, voucher = voucher_number, year,
+    start_latitude, voucher = voucher_number, year,
     cruise, region, vessel = vessel_id, haul
   )
 
@@ -54,7 +54,7 @@ racebase_records <- old_catch %>%
 # outlier species from this year
 outlier_spp <- new_records %>%
   dplyr::group_by(species_name) %>%
-  tidyr::nest() %>%
+  tidyr::nest() %>% 
   dplyr::mutate(outlier = purrr::map(data, ~check_outlier(.x, this_year, racebase_records))) %>%
   tidyr::unnest(cols = outlier) %>%
   dplyr::left_join(species_codes, by = join_by(species_name, species_code, common_name)) %>%

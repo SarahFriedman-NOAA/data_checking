@@ -94,6 +94,7 @@ new_haul <- edit_events0 %>%
 
 new_catch <- edit_catch_species0 %>%
   dplyr::left_join(edit_catch_samples0, by = join_by(catch_sample_id)) %>%
+ # dplyr::mutate(year = as.numeric(format(as.Date("2024-06-11 20:37:33 UTC", format="%Y-%m-%d"),"%Y"))) %>%
   dplyr::select(haul_id, species_code, voucher_number,
     total_weight = total_weight_in_haul, number_fish = total_number_in_haul
   ) %>%
@@ -105,4 +106,6 @@ new_catch <- edit_catch_species0 %>%
 new_lengths <- edit_lengths0 %>%
   dplyr::bind_rows(edit_specimens0) %>%
   dplyr::filter(haul_id %in% new_haul$haul_id) %>%
+  # dplyr::mutate(year = as.numeric(format(as.Date("2024-06-11 20:37:33 UTC", format="%Y-%m-%d"),"%Y"))) %>%
   dplyr::select(haul_id, species_code, specimen_number, sex, length = edit_length, weight = edit_weight)
+
