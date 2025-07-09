@@ -25,7 +25,7 @@ if (!file.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 
 # get all catch and taxonomy info together and filtering to just groundfish surveys after 2000
 survey_def_ids <- c(
-  "AI" = 52, "GOA" = 47, "EBS" = 98,
+  "AI" = 52, "GOA" = 47, "GOA" = 39, "EBS" = 98,
   "BSS" = 78, "NBS" = 143
 )
 

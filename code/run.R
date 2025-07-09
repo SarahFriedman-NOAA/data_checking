@@ -1,8 +1,22 @@
 # Use cached RACEBASE data? Will always download edit tables fresh
 use_cached <- TRUE
 
+# authorize googlesheets4
+googlesheets4::gs4_auth()
+1
+
+
 # spreadsheet on google drive where outliers will be written
 drive_file <- "1Wgz3uu4h8X1NAQPdBFtdESF9f8RDKORLaCMjUSfAn4I"
+
+
+# download current drive version
+drive_version <- googlesheets4::read_sheet(drive_file,
+                                           range = "A:M",
+                                           col_types = "Ddcddcccdcddl"
+) %>%
+  janitor::clean_names()
+
 
 
 ## Load packages & functions -----------------------------------------------------------
@@ -64,20 +78,9 @@ readr::write_csv(out, paste0(out_dir, "/all_catch_outliers_", this_year, ".csv")
 
 
 
-# authorize googlesheets4
-googlesheets4::gs4_auth()
-1
-
-# download current drive version
-drive_version <- googlesheets4::read_sheet(drive_file,
-  range = "A:L",
-  col_types = "Ddcddcccdcdd"
-) %>%
-  janitor::clean_names()
-
 # combine drive version and current version
 new_rows <- dplyr::anti_join(
-  out, drive_version,
+  out, dplyr::select(drive_version, -checked),
   join_by(cruise, vessel, haul, issue, species_code)
 ) %>%
   dplyr::mutate(date_script_run = Sys.Date()) %>%
@@ -94,3 +97,4 @@ googlesheets4:::range_add_validation(drive_file,
     paste0("outliers!M", nrow(drive_version) + 1, ":M", nrow(drive_version) + nrow(new_rows) + 1),
   rule = rule_checkbox
 )
+
