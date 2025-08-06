@@ -64,14 +64,21 @@ outlier_spp <- new_records %>%
 
 
 # plots outliers to pdf document
-pdf(paste0(out_dir, "/range_outliers_", this_year, ".pdf"))
-new_records %>%
+new_outliers <- new_records %>%
   dplyr::filter(species_name %in% outlier_spp$species_name) %>%
-  left_join(drive_version, by = join_by(species_code, species_name, common_name, cruise, region, vessel, haul)) %>%   filter(!checked) %>%
-  dplyr::group_by(species_name) %>%
-  tidyr::nest() %>%
-  dplyr::mutate(outlier = purrr::map(data, ~check_outlier(.x, this_year, racebase_records, plot = T)))
-dev.off()
+  left_join(drive_version, by = join_by(species_code, species_name, common_name, cruise, region, vessel, haul)) %>%   filter(!checked) 
+if(nrow(new_outliers) > 0){
+  pdf(paste0(out_dir, "/range_outliers_", this_year, ".pdf"))
+  new_outliers %>%
+    dplyr::group_by(species_name) %>%
+    tidyr::nest() %>%
+    dplyr::mutate(outlier = purrr::map(data, ~check_outlier(.x, this_year, racebase_records, plot = T)))
+  dev.off()
+} else {
+  if(file.exists(paste0(out_dir, "/range_outliers_", this_year, ".pdf"))){
+    file.remove(paste0(out_dir, "/range_outliers_", this_year, ".pdf"))
+  }
+}
 
 
 # associated data frame of outlier specimens
