@@ -67,8 +67,7 @@ outlier_spp <- new_records %>%
 pdf(paste0(out_dir, "/range_outliers_", this_year, ".pdf"))
 new_records %>%
   dplyr::filter(species_name %in% outlier_spp$species_name) %>%
-  left_join(drive_version) %>% 
-  filter(!checked) %>%
+  left_join(drive_version, by = join_by(species_code, species_name, common_name, cruise, region, vessel, haul)) %>%   filter(!checked) %>%
   dplyr::group_by(species_name) %>%
   tidyr::nest() %>%
   dplyr::mutate(outlier = purrr::map(data, ~check_outlier(.x, this_year, racebase_records, plot = T)))

@@ -1,3 +1,9 @@
+
+## Load packages & functions -----------------------------------------------------------
+# loading bespoke functions
+source("code/functions.R")
+
+
 # Use cached RACEBASE data? Will always download edit tables fresh
 use_cached <- TRUE
 
@@ -17,11 +23,6 @@ drive_version <- googlesheets4::read_sheet(drive_file,
 ) %>%
   janitor::clean_names()
 
-
-
-## Load packages & functions -----------------------------------------------------------
-# loading bespoke functions
-source("code/functions.R")
 
 
 
