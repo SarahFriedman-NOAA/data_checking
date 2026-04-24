@@ -3,7 +3,7 @@
 ## =============================================================================
 
 # RACEBASE tables to query
-locations <- c(
+edit_data <- c(
   # Biological edit data
   "RACE_DATA.EDIT_CATCH_SPECIES",
   "RACE_DATA.EDIT_CATCH_SAMPLES",
@@ -27,72 +27,79 @@ historical_data <- c(
   "RACEBASE.CRUISE"
 )
 
+all_tables <- c(edit_data, historical_data)
 
 ## =============================================================================
 ## Prepare local cache
 ## =============================================================================
+current_year <- format(Sys.Date(), "%Y")
 
 data_dir <- "data/oracle"
-
-if (!dir.exists(data_dir)) {
-  dir.create(data_dir, recursive = TRUE)
-}
+dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Helper for consistent naming
 format_name <- function(x) gsub("\\.", "-", x)
 
-existing_tables <- list.files(data_dir) %>%
-  tools::file_path_sans_ext() %>%
-  toupper()
+table_status <- purrr::map_dfr(all_tables, function(tbl) {
+  
+  file_name <- paste0(tolower(format_name(tbl)), ".csv")
+  file_path <- file.path(data_dir, file_name)
+  
+  if (!file.exists(file_path)) {
+    return(tibble::tibble(
+      table = tbl,
+      file = file_name,
+      status = "missing"
+    ))
+  }
+  
+  file_year <- format(file.info(file_path)$mtime, "%Y")
+  
+  if (file_year != current_year) {
+    return(tibble::tibble(
+      table = tbl,
+      file = file_name,
+      status = "stale"
+    ))
+  }
+  
+  tibble::tibble(
+    table = tbl,
+    file = file_name,
+    status = "current"
+  )
+})
 
-historical_needed <- format_name(historical_data)
 
-# Include historical tables if cache is incomplete or bypassed
-if (!use_cached || !all(historical_needed %in% existing_tables)) {
-  locations <- c(locations, historical_data)
-}
-
-required_tables <- format_name(locations)
+tables_to_download <- table_status %>%
+  dplyr::filter(
+    table %in% edit_data | status != "current"
+  ) %>%
+  dplyr::pull(table)
 
 
 ## =============================================================================
 ## Download or use cached data
 ## =============================================================================
 
-if (exists("channel")) {
+message("Downloading ", length(tables_to_download), " table(s):")
+print(tables_to_download)
   
-  # Download tables from Oracle
-  for (table in locations) {
+  if (!exists("channel")) {
+    stop("Not connected to Oracle. Cannot download missing/stale tables.")
+  }
+  
+  for (tbl in tables_to_download) {
     
-    message("Downloading data from ", table)
+    message("Downloading ", tbl)
     
-    filename  <- tolower(format_name(table))
-    file_path <- here::here(data_dir, paste0(filename, ".csv"))
+    file_name <- paste0(tolower(format_name(tbl)), ".csv")
+    file_path <- file.path(data_dir, file_name)
     
-    query <- paste0("SELECT * FROM ", table)
-    dat   <- RODBC::sqlQuery(channel, query)
+    query <- paste0("SELECT * FROM ", tbl)
+    dat <- RODBC::sqlQuery(channel, query)
     
     readr::write_csv(dat, file_path)
-    
     rm(dat)
   }
   
-} else {
-  
-  # Use cached tables if available
-  if (!all(required_tables %in% existing_tables)) {
-    
-    cat(
-      "Not connected to Oracle database and cannot locate required cached tables.\n",
-      "Connect to Oracle and re-run the download script to proceed.\n"
-    )
-    
-    use_cached <- FALSE
-    gapindex::get_connected()
-    
-  } else {
-    
-    cat("Not connected to Oracle database. Using cached tables.\n")
-    
-  }
-}

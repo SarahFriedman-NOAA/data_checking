@@ -13,7 +13,7 @@ pacman::p_load(
 source("code/functions.R")
 
 
-# Toggle to download tables from racebase (this should be done annually); will always download edit tables fresh
+# Toggle to download tables from racebase (this should be done annually); will always download edit tables fresh.
 use_cached <- TRUE 
 
 
