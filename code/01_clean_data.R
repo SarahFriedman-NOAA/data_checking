@@ -1,111 +1,153 @@
-## Load Oracle tables in R --------------------------------------------------
-a <- list.files(
-  path = here::here("data", "oracle"),
-  pattern = "\\.csv"
+## =============================================================================
+## Load Oracle tables into R
+## =============================================================================
+
+oracle_dir <- here::here("data", "oracle")
+
+files <- list.files(
+  path = oracle_dir,
+  pattern = "\\.csv$",
+  full.names = TRUE
 )
 
-for (i in 1:length(a)) {
-  suppressWarnings(b <- readr::read_csv(file = here::here("data", "oracle", a[i]), show_col_types = FALSE))
-  b <- janitor::clean_names(b)
-  if (names(b)[1] %in% "x1") {
-    b$x1 <- NULL
+for (file in files) {
+  dat <- suppressWarnings(
+    readr::read_csv(file, show_col_types = FALSE)
+  ) %>%
+    janitor::clean_names()
+  
+  # Remove accidental index column if present
+  if ("x1" %in% names(dat)) {
+    dat$x1 <- NULL
   }
-  assign(x = paste0(str_extract(a[i], "[^-]*(?=\\.)"), "0"), value = b)
-  rm(b)
+  
+  # Create object name (match original behavior)
+  obj_name <- paste0(stringr::str_extract(basename(file), "[^-]*(?=\\.)"), "0")
+  
+  assign(obj_name, dat, envir = .GlobalEnv)
 }
 
 
-
-## Load GAP cruise information --------------------------------------------------
+## =============================================================================
+## Survey year + output setup
+## =============================================================================
 
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
-out_dir <- paste0("output/", this_year)
-if (!file.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
+
+out_dir <- file.path("output", this_year)
+if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 
 
-# get all catch and taxonomy info together and filtering to just groundfish surveys after 2000
+## =============================================================================
+## Cruise + species metadata
+## =============================================================================
+
 survey_def_ids <- c(
-  "AI" = 52, "GOA" = 47, "GOA" = 39, "EBS" = 98,
-  "BSS" = 78, "NBS" = 143
+  "AI" = 52,
+  "GOA" = 47,
+  "GOA" = 39,
+  "EBS" = 98,
+  "BSS" = 78,
+  "NBS" = 143
 )
 
 cruises <- v_cruises0 %>%
-  dplyr::filter(year >= 2000 & survey_definition_id %in% survey_def_ids) %>%
-  dplyr::select(year, survey_definition_id, cruisejoin, region, cruise, cruise_id, vessel_id)
+  filter(year >= 2000, survey_definition_id %in% survey_def_ids) %>%
+  select(year, survey_definition_id, cruisejoin, region,
+         cruise, cruise_id, vessel_id)
+
 new_cruise <- cruises %>%
-  dplyr::filter(year == this_year)
+  filter(year == this_year)
 
 species_codes <- race_species_codes0 %>%
-  dplyr::select(species_code, species_name, common_name)
+  select(species_code, species_name, common_name)
 
 
+## =============================================================================
+## Historical data
+## =============================================================================
 
-
-## Load/clean historical data --------------------------------------------------
-
-# historical effort/biological data
 old_haul <- haul0 %>%
-  dplyr::filter(abundance_haul == "Y") %>%
-  dplyr::right_join(cruises, by = join_by(cruisejoin, region, cruise)) %>%
-  dplyr::select(cruisejoin:haul, start_latitude, start_longitude, depth = bottom_depth) %>%
+  filter(abundance_haul == "Y") %>%
+  right_join(cruises, by = join_by(cruisejoin, region, cruise)) %>%
+  select(cruisejoin:haul, start_latitude, start_longitude,
+         depth = bottom_depth) %>%
   filter(!cruise %in% new_cruise$cruise)
 
+
 old_catch <- catch0 %>%
-  dplyr::right_join(cruises, by = join_by(cruisejoin, region, cruise)) %>%
-  dplyr::group_by(cruise, vessel, haul, species_code) %>%
-  dplyr::mutate(avg_specimen_weight = weight / number_fish) %>%
-  dplyr::select(cruise, vessel, haul, species_code, avg_specimen_weight, total_weight = weight, number_fish, year) %>%
-  dplyr::filter(year != this_year)
+  right_join(cruises, by = join_by(cruisejoin, region, cruise)) %>%
+  group_by(cruise, vessel, haul, species_code) %>%
+  mutate(avg_specimen_weight = weight / number_fish) %>%
+  select(
+    cruise, vessel, haul, species_code,
+    avg_specimen_weight,
+    total_weight = weight,
+    number_fish,
+    year
+  ) %>%
+  filter(year != this_year)
 
 
 old_lengths <- length0 %>%
-  dplyr::right_join(cruises, by = join_by(cruisejoin, region, cruise)) %>%
-  dplyr::select(species_code, sex, length, year) %>%
-  dplyr::bind_rows(specimen0 %>%
-    dplyr::right_join(cruises, by = join_by(cruisejoin, region, cruise)) %>%
-    dplyr::select(species_code, sex, length, year, weight)) %>%
-  dplyr::filter(year != this_year)
+  right_join(cruises, by = join_by(cruisejoin, region, cruise)) %>%
+  select(species_code, sex, length, year) %>%
+  bind_rows(
+    specimen0 %>%
+      right_join(cruises, by = join_by(cruisejoin, region, cruise)) %>%
+      select(species_code, sex, length, year, weight)
+  ) %>%
+  filter(year != this_year)
 
 
+## =============================================================================
+## New (unfinalized) data
+## =============================================================================
 
-
-
-## Load/clean new (un-finalized) data --------------------------------------------------
-
-# compiling haul data and lat/lon
+# Haul data
 new_haul <- edit_events0 %>%
-  dplyr::filter(event_type_id == 4) %>% # taking lat/lon at EQ for each haul
-  dplyr::mutate(
-    start_latitude = ddm_to_dd(edit_latitude, "lat"), # converting ddm to dd
+  filter(event_type_id == 4) %>%  # EQ position
+  mutate(
+    start_latitude  = ddm_to_dd(edit_latitude, "lat"),
     start_longitude = ddm_to_dd(edit_longitude, "long")
   ) %>%
-  dplyr::select(haul_id, contains("start")) %>%
-  dplyr::right_join(edit_hauls0, by = join_by(haul_id)) %>%
-  dplyr::right_join(new_cruise, by = join_by(cruise_id)) %>%
-  dplyr::left_join(edit_haul_measurements0, by = join_by(haul_id)) %>%
-  dplyr::mutate(duration = edit_duration_ob_fb * 60) %>%
-  dplyr::select(
-    haul_id, cruise_id, cruise, region, year, vessel_id, haul, station, stratum, haul_type,
-    performance, accessories, gear, duration, start_latitude, start_longitude,
-    bottom_depth = edit_bottom_depth, gear_depth = edit_gear_depth, net_height = edit_net_height,
+  select(haul_id, contains("start")) %>%
+  right_join(edit_hauls0, by = join_by(haul_id)) %>%
+  right_join(new_cruise, by = join_by(cruise_id)) %>%
+  left_join(edit_haul_measurements0, by = join_by(haul_id)) %>%
+  mutate(duration = edit_duration_ob_fb * 60) %>%
+  select(
+    haul_id, cruise_id, cruise, region, year, vessel_id,
+    haul, station, stratum, haul_type, performance,
+    accessories, gear, duration,
+    start_latitude, start_longitude,
+    bottom_depth = edit_bottom_depth,
+    gear_depth   = edit_gear_depth,
+    net_height   = edit_net_height,
     net_height_method
   )
 
 
+# Catch data
 new_catch <- edit_catch_species0 %>%
-  dplyr::left_join(edit_catch_samples0, by = join_by(catch_sample_id)) %>%
- # dplyr::mutate(year = as.numeric(format(as.Date("2024-06-11 20:37:33 UTC", format="%Y-%m-%d"),"%Y"))) %>%
-  dplyr::select(haul_id, species_code, voucher_number,
-    total_weight = total_weight_in_haul, number_fish = total_number_in_haul
+  left_join(edit_catch_samples0, by = join_by(catch_sample_id)) %>%
+  select(
+    haul_id, species_code, voucher_number,
+    total_weight = total_weight_in_haul,
+    number_fish  = total_number_in_haul
   ) %>%
-  dplyr::group_by(haul_id, species_code) %>%
-  dplyr::mutate(avg_specimen_weight = total_weight / number_fish) %>%
-  dplyr::filter(haul_id %in% new_haul$haul_id)
+  group_by(haul_id, species_code) %>%
+  mutate(avg_specimen_weight = total_weight / number_fish) %>%
+  filter(haul_id %in% new_haul$haul_id)
 
 
+# Length + specimen data
 new_lengths <- edit_lengths0 %>%
-  dplyr::bind_rows(edit_specimens0) %>%
-  dplyr::filter(haul_id %in% new_haul$haul_id) %>%
-  # dplyr::mutate(year = as.numeric(format(as.Date("2024-06-11 20:37:33 UTC", format="%Y-%m-%d"),"%Y"))) %>%
-  dplyr::select(haul_id, species_code, specimen_number, sex, length = edit_length, weight = edit_weight)
-
+  bind_rows(edit_specimens0) %>%
+  filter(haul_id %in% new_haul$haul_id) %>%
+  select(
+    haul_id, species_code, specimen_number,
+    sex,
+    length = edit_length,
+    weight = edit_weight
+  )

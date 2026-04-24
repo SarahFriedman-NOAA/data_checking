@@ -1,101 +1,133 @@
+## =============================================================================
+## Load packages & functions
+## =============================================================================
+# Load packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  tidyverse, RODBC, here, janitor, dbscan, 
+  ggforce, mgcv, googlesheets4, sf, assertr
+)
 
-## Load packages & functions -----------------------------------------------------------
-# loading bespoke functions
+
+# Load custom functions
 source("code/functions.R")
 
 
-# Use cached RACEBASE data? Will always download edit tables fresh
-use_cached <- TRUE
-
-# authorize googlesheets4
-googlesheets4::gs4_auth()
-1
+# Toggle to download tables from racebase (this should be done annually); will always download edit tables fresh
+use_cached <- TRUE 
 
 
-# spreadsheet on google drive where outliers will be written
-drive_file <- "1Wgz3uu4h8X1NAQPdBFtdESF9f8RDKORLaCMjUSfAn4I"
+# Authenticate Google Sheets
+gs4_auth()
 
 
-# download current drive version
-drive_version <- googlesheets4::read_sheet(drive_file,
-                                           range = "A:M",
-                                           col_types = "Ddcddcccdcddl"
+
+## =============================================================================
+## Read existing Google Sheet data
+## =============================================================================
+
+# Google Sheet ID (outlier tracking)
+drive_file <- "1TWDGeviQqf20bvhnqrZKBNzuno6UPlJuHVInN3sNHDg"
+
+
+drive_version <- read_sheet(
+  drive_file,
+  range = "A:M",
+  col_types = "Ddcddcccdcddl"
 ) %>%
-  janitor::clean_names()
+  clean_names()
 
 
 
 
-## Download and clean Oracle data ---------------------------------------------------
+## =============================================================================
+## Connect to Oracle
+## =============================================================================
 
-# connecting to Oracle database
-if (file.exists("Z:/Projects/ConnectToOracle.R")) {
-  source("Z:/Projects/ConnectToOracle.R")
+oracle_script <- "Z:/Projects/ConnectToOracle.R"
+
+if (file.exists(oracle_script)) {
+  source(oracle_script)
 } else {
   channel <- gapindex::get_connected()
 }
 
 
-# downloads data from oracle
+
+## =============================================================================
+## Download & clean data
+## =============================================================================
+
 source("code/00_download_data.R")
-
-
-# reading, cleaning, and formatting data
 source("code/01_clean_data.R")
 
 
 
 
-## Catch data issues --------------------------------------------------
+## =============================================================================
+## Run data quality checks
+## =============================================================================
 
-# generates plots of problematic specimen lengths/weights
+# Specimen-level checks (length/weight issues)
 source("code/02_specimen_checks.R")
 
-# checks for geographical outliers based on historical data
-# code takes a while to run!
+# Spatial/range checks (can be slow)
 source("code/03_range_checks.R")
 
-# length_plot
-# weight_plot
 
 
+## =============================================================================
+## Combine and export outliers
+## =============================================================================
 
-## Writing output --------------------------------------------------
-
-# writing all issues to csv output
 out <- outlier_df %>%
-  dplyr::full_join(length_outliers) %>%
-  dplyr::full_join(catch_outliers) %>%
-  dplyr::full_join(specimen_outliers) %>%
-  dplyr::mutate(avg_weight_kg = round(weight_kg, 2)) %>%
-  dplyr::select(
+  full_join(length_outliers) %>%
+  full_join(catch_outliers) %>%
+  full_join(specimen_outliers) %>%
+  mutate(avg_weight_kg = round(weight_kg, 2)) %>%
+  select(
     cruise, region, vessel, haul, issue,
     species_name, common_name, species_code,
     vouchered, length_mm, avg_weight_kg
   ) %>%
-  dplyr::arrange(cruise, region, vessel, haul)
-readr::write_csv(out, paste0(out_dir, "/all_catch_outliers_", this_year, ".csv"), na = "")
+  arrange(cruise, region, vessel, haul)
+
+# Write CSV output
+output_file <- file.path(out_dir, paste0("all_catch_outliers_", this_year, ".csv"))
+write_csv(out, output_file, na = "")
 
 
 
+## =============================================================================
+## Identify new rows for Google Sheet
+## =============================================================================
 
-# combine drive version and current version
-new_rows <- dplyr::anti_join(
-  out, dplyr::select(drive_version, -checked),
-  join_by(cruise, vessel, haul, issue, species_code)
-) %>%
-  dplyr::mutate(date_script_run = Sys.Date()) %>%
-  dplyr::select(date_script_run, everything()) %>%
-  dplyr::arrange(cruise, region, vessel, haul)
+join_keys <- join_by(cruise, vessel, haul, issue, species_code)
+
+new_rows <- out %>%
+  anti_join(select(drive_version, -checked), by = join_keys) %>%
+  mutate(date_script_run = Sys.Date()) %>%
+  relocate(date_script_run) %>%
+  arrange(cruise, region, vessel, haul)
 
 
-# append new rows to google sheet
-googlesheets4::sheet_append(drive_file, new_rows)
 
-# add checkmarks to google sheet
-googlesheets4:::range_add_validation(drive_file,
-  range =
-    paste0("outliers!M", nrow(drive_version) + 1, ":M", nrow(drive_version) + nrow(new_rows) + 1),
-  rule = rule_checkbox
-)
+## =============================================================================
+## Append new rows to Google Sheet
+## =============================================================================
 
+if (nrow(new_rows) > 0) {
+  sheet_append(drive_file, new_rows)
+  
+  # Add checkbox validation for new rows
+  start_row <- nrow(drive_version) + 1
+  end_row   <- start_row + nrow(new_rows)
+  
+  range <- sprintf("outliers!M%d:M%d", start_row, end_row)
+  
+  googlesheets4:::range_add_validation(
+    drive_file,
+    range = range,
+    rule  = rule_checkbox
+  )
+}
