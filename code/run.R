@@ -23,6 +23,19 @@ gs4_auth()
 
 
 ## =============================================================================
+## Survey year + output setup
+## =============================================================================
+
+# Year to pull proper data from edit tables; defaults to current year
+this_year <- as.numeric(format(Sys.Date(), "%Y"))
+
+out_dir <- file.path("output", this_year)
+if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
+
+
+
+
+## =============================================================================
 ## Read existing Google Sheet data
 ## =============================================================================
 

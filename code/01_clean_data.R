@@ -28,15 +28,6 @@ for (file in files) {
 }
 
 
-## =============================================================================
-## Survey year + output setup
-## =============================================================================
-
-this_year <- as.numeric(format(Sys.Date(), "%Y"))
-
-out_dir <- file.path("output", this_year)
-if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
-
 
 ## =============================================================================
 ## Cruise + species metadata
@@ -140,6 +131,9 @@ new_catch <- edit_catch_species0 %>%
   mutate(avg_specimen_weight = total_weight / number_fish) %>%
   filter(haul_id %in% new_haul$haul_id)
 
+if(nrow(new_catch) == 0){
+  stop(paste("No data found in the edit tables for", this_year))
+}
 
 # Length + specimen data
 new_lengths <- edit_lengths0 %>%
