@@ -127,6 +127,12 @@ new_catch <- edit_catch_species0 %>%
     total_weight = total_weight_in_haul,
     number_fish  = total_number_in_haul
   ) %>%
+  mutate(species_code = recode( # fixing juvenile species codes
+    species_code,
+    `21721` = 21720,
+    `21741` = 21740
+  ) 
+  ) %>%
   group_by(haul_id, species_code) %>%
   mutate(avg_specimen_weight = total_weight / number_fish) %>%
   filter(haul_id %in% new_haul$haul_id)
@@ -139,9 +145,15 @@ if(nrow(new_catch) == 0){
 new_lengths <- edit_lengths0 %>%
   bind_rows(edit_specimens0) %>%
   filter(haul_id %in% new_haul$haul_id) %>%
+  mutate(species_code = recode( # fixing juvenile species codes
+    species_code,
+    `21721` = 21720,
+    `21741` = 21740
+  )
+  ) %>%
   select(
     haul_id, species_code, specimen_number,
     sex,
     length = edit_length,
     weight = edit_weight
-  )
+  ) 
