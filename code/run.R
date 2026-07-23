@@ -143,4 +143,6 @@ if (nrow(new_rows) > 0) {
     range = range,
     rule  = rule_checkbox
   )
+} else {
+  cat("No new outliers to append to Google Sheet.\n")
 }

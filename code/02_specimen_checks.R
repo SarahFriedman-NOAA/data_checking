@@ -15,7 +15,7 @@ length_stats <- new_lengths %>%
   left_join(species_codes, by = join_by(species_code))
 
 length_outliers <- length_stats %>%
-  filter(outlier, species_code != 21741, year == this_year) %>%
+  filter(outlier, species_code != 21741, species_code != 21721, year == this_year) %>%
   arrange(species_code) %>%
   select(
     cruise, region,
