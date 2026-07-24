@@ -3,9 +3,14 @@
 ## =============================================================================
 # Load packages
 if (!require("pacman")) install.packages("pacman")
+
+if(!rlang::is_installed("gapindex")) {
+  pak::pak("afsc-gap-products/gapindex")
+}
+
 pacman::p_load(
-  tidyverse, RODBC, here, janitor, dbscan, 
-  ggforce, mgcv, googlesheets4, sf, assertr
+  tidyverse, RODBC, here, janitor, dbscan, getPass,
+  ggforce, mgcv, googlesheets4, sf, assertr, gapindex
 )
 
 
